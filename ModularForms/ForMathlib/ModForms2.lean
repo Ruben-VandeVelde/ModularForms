@@ -122,11 +122,21 @@ variable [GradedMonoid.GOne A]
 @[simp]
 theorem one_fst : (1 : GradedMonoid A).fst = 0 :=
   rfl
+@[simp]
+theorem one_snd : (1 : GradedMonoid A).snd = 1 :=
+  rfl
 end
 
 instance (Γ : Subgroup SL(2, ℤ)) : GradedMonoid.GOne fun k => ModularForm Γ k
     where
   one := 1
+
+instance (Γ : Subgroup SL(2, ℤ)) : GradedMonoid.GMul fun k => ModularForm Γ k
+    where
+  mul f g := f.mul g
+
+theorem GradedMonoid.mk_snd  {A : ι → Type _} (i : ι) (a : A i) :
+  (GradedMonoid.mk i a).snd = a := rfl
 
 instance gradedModRing (Γ : Subgroup SL(2, ℤ)) : DirectSum.GCommRing fun k => ModularForm Γ k
     where
@@ -134,22 +144,22 @@ instance gradedModRing (Γ : Subgroup SL(2, ℤ)) : DirectSum.GCommRing fun k =>
   one := 1
   one_mul := by
     intro f
-    simp_rw [GradedMonoid.GOne.toOne, GradedMonoid.GMul.toMul]
+    rw [GradedMonoid.GOne.toOne, GradedMonoid.GMul.toMul]
     apply Sigma.ext
     · simp only [(· * ·), one_fst, zero_add]
-    · simp only [Submodule.coe_mk, one_mul, hEq_one_mul]
+    · simp only [(· * ·), one_fst, one_snd, Submodule.coe_mk, one_mul, hEq_one_mul]
   mul_one := by
     intro f
     rw [GradedMonoid.GOne.toOne, GradedMonoid.GMul.toMul]
     apply Sigma.ext
-    · simp only [add_zero]
-    · simp only [Submodule.coe_mk, mul_one, heq_mul_one]
+    · simp only [(· * ·), one_fst, add_zero]
+    · simp only [(· * ·), one_fst, one_snd, Submodule.coe_mk, mul_one, hEq_mul_one]
   mul_assoc := by
     intro f g h
     rw [GradedMonoid.GMul.toMul]
     apply Sigma.ext
     · apply add_assoc
-    · simp only [Submodule.coe_mk, heq_mul_assoc]
+    · simp only [(· * ·), Submodule.coe_mk, hEq_mul_assoc]
   mul_zero := by intro i j f; ext1; simp
   zero_mul := by intro i j f; ext1; simp
   mul_add := by
@@ -165,22 +175,20 @@ instance gradedModRing (Γ : Subgroup SL(2, ℤ)) : DirectSum.GCommRing fun k =>
     rw [GradedMonoid.GMul.toMul]
     apply Sigma.ext
     · apply add_comm
-    · apply heq_mul_comm
+    · apply hEq_mul_comm
   gnpow_zero' := by
     intro f
-    apply Sigma.ext
-    repeat' rfl
+    apply Sigma.ext <;> rw [GradedMonoid.GMonoid.gnpowRec_zero]
   gnpow_succ' := by
     intro n f
     rw [GradedMonoid.GMul.toMul]
-    apply Sigma.ext
-    repeat' rfl
+    apply Sigma.ext <;> rw [GradedMonoid.GMonoid.gnpowRec_succ]
   natCast n := n • (1 : ModularForm Γ 0)
   natCast_zero := by simp
-  natCast_succ := by intro n; simp only [add_smul, one_nsmul, add_right_inj]; rfl
+  natCast_succ := by intro n; simp only [add_smul, one_nsmul, add_right_inj]
   intCast n := n • (1 : ModularForm Γ 0)
   intCast_ofNat := by simp
-  intCast_negSucc_ofNat := by intro; apply _root_.neg_smul
+  intCast_negSucc_ofNat := by intro; simp only [Int.negSucc_coe]; apply _root_.neg_smul
 #align modular_form.graded_mod_ring ModularForm.gradedModRing
 
 end ModularForm
@@ -230,9 +238,9 @@ theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvarian
     have h2 : conj D ^ k ≠ 0 := by
       apply zpow_ne_zero; rw [starRingEnd_apply, star_ne_zero]; exact hD
     field_simp [h1, h2]; ring
-  stop
   have : ((γ • z : ℍ) : ℂ).im = UpperHalfPlane.im z / Complex.normSq D :=
     by
+    stop
     rw [UpperHalfPlane.coe_im]
     convert UpperHalfPlane.im_smul_eq_div_normSq γ z
     simp only [UpperHalfPlane.coe_im,
