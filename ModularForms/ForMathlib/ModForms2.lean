@@ -204,6 +204,8 @@ def pet (f g : ℍ → ℂ) (k : ℤ) : ℍ → ℂ := fun z =>
 def petSelf (f : ℍ → ℂ) (k : ℤ) : ℍ → ℝ := fun z => Complex.abs (f z) ^ 2 * UpperHalfPlane.im z ^ k
 #align pet_self petSelf
 
+set_option trace.profiler true in
+set_option trace.Meta.isDefEq true in
 theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvariantForm Γ k)
     (g : SlashInvariantForm Γ k) {γ : SL(2, ℤ)} (hγ : γ ∈ Γ) (z : ℍ) :
     pet f g k (γ • z) = pet f g k z := by
@@ -237,17 +239,21 @@ theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvarian
     have h1 : D ^ k ≠ 0 := zpow_ne_zero _ hD
     have h2 : conj D ^ k ≠ 0 := by
       apply zpow_ne_zero; rw [starRingEnd_apply, star_ne_zero]; exact hD
+    stop
     field_simp [h1, h2]; ring
   have : ((γ • z : ℍ) : ℂ).im = UpperHalfPlane.im z / Complex.normSq D :=
     by
-    stop
     rw [UpperHalfPlane.coe_im]
-    convert UpperHalfPlane.im_smul_eq_div_normSq γ z
+    erw [UpperHalfPlane.im_smul_eq_div_normSq γ z]
+    congr
+    -- convert UpperHalfPlane.im_smul_eq_div_normSq γ z
+    -- stop
     simp only [UpperHalfPlane.coe_im,
       Matrix.SpecialLinearGroup.coe_GLPos_coe_GL_coe_matrix,
       Matrix.SpecialLinearGroup.coe_matrix_coe, Int.coe_castRingHom]
-    suffices ((↑ₘγ).map (↑)).det = (1 : ℝ) by rw [this]; simp only [one_mul]
-    have : (↑ₘγ).map ((↑) : ℤ → ℝ) = ↑ₘ(γ : SL(2, ℝ)) := by
+    -- suffices ((↑ₘγ).map ((↑) : ℤ → ℝ)).det = (1 : ℝ) by sorry; rw [this]; sorry; simp only [one_mul]
+    convert one_mul (UpperHalfPlane.im z)
+    have : (↑ₘ γ : Matrix (Fin 2) (Fin 2) ℤ).map ((↑) : ℤ → ℝ) = ↑ₘ(γ : SL(2, ℝ)) := by
       simp only [Matrix.SpecialLinearGroup.coe_matrix_coe, Int.coe_castRingHom]
     rw [this]; apply Matrix.SpecialLinearGroup.det_coe
   apply_fun ((↑) : ℝ → ℂ) at this
@@ -267,11 +273,11 @@ theorem petSelf_eq (f : ℍ → ℂ) (k : ℤ) (z : ℍ) : petSelf f k z = re (p
       congr
       rw [mul_comm]
     rw [← ofReal_zpow, ofReal_mul_re, mul_comm]
-    simp only [UpperHalfPlane.coe_im, IsROrC.ofReal_real_eq_id, id.def]
   rw [this]; congr
   rw [mul_comm, ← normSq_eq_abs, normSq]
   simp only [MonoidWithZeroHom.coe_mk, IsROrC.star_def, mul_re, conj_re, conj_im, mul_neg,
     sub_neg_eq_add]
+  simp only [ZeroHom.coe_mk]
 #align pet_self_eq petSelf_eq
 
 theorem petSelf_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvariantForm Γ k)
