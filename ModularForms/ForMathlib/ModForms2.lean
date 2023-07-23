@@ -50,12 +50,13 @@ open scoped Topology Manifold UpperHalfPlane
 variable (F : Type _) (Γ : Subgroup SL(2, ℤ)) (k : ℤ)
 
 --cast for modular forms, which is useful for removing `heq`'s.
+@[simps]
 def mcast {a b : ℤ} {Γ : Subgroup SL(2, ℤ)} (h : a = b) (f : ModularForm Γ a) : ModularForm Γ b
     where
   toFun := (f : ℍ → ℂ)
-  slash_action_eq' := by intro A; have := f.slash_action_eq' A; convert this; exact h.symm
+  slash_action_eq' A := by subst h; exact f.slash_action_eq' A
   holo' := f.holo'
-  bdd_at_infty' := by intro A; convert f.bdd_at_infty' A <;> exact h.symm
+  bdd_at_infty' A := by subst h; exact f.bdd_at_infty' A
 #align modular_form.mcast ModularForm.mcast
 
 theorem type_eq {a b : ℤ} (Γ : Subgroup SL(2, ℤ)) (h : a = b) : ModularForm Γ a = ModularForm Γ b :=
@@ -66,9 +67,9 @@ theorem type_eq {a b : ℤ} (Γ : Subgroup SL(2, ℤ)) (h : a = b) : ModularForm
 
 theorem cast_eq_mcast {a b : ℤ} {Γ : Subgroup SL(2, ℤ)} (h : a = b) (f : ModularForm Γ a) :
     cast (type_eq Γ h) f = mcast h f := by
-  induction h
+  subst h
   ext1
-  rfl
+  simp only [cast_eq, mcast_toFun]
 #align modular_form.cast_eq_mcast ModularForm.cast_eq_mcast
 
 theorem hEq_one_mul (k : ℤ) {Γ : Subgroup SL(2, ℤ)} (f : ModularForm Γ k) :
@@ -76,11 +77,9 @@ theorem hEq_one_mul (k : ℤ) {Γ : Subgroup SL(2, ℤ)} (f : ModularForm Γ k) 
   by
   apply heq_of_cast_eq (type_eq Γ (zero_add k).symm).symm
   funext
-  rw [cast_eq_mcast, mcast]
-  simp only [mul_coe, one_coe_eq_one, one_mul]
+  rw [cast_eq_mcast (zero_add k)]
   ext1
-  rfl
-  simp only [zero_add]
+  simp
 #align modular_form.heq_one_mul ModularForm.hEq_one_mul
 
 theorem hEq_mul_one (k : ℤ) {Γ : Subgroup SL(2, ℤ)} (f : ModularForm Γ k) :
@@ -88,31 +87,27 @@ theorem hEq_mul_one (k : ℤ) {Γ : Subgroup SL(2, ℤ)} (f : ModularForm Γ k) 
   by
   apply heq_of_cast_eq (type_eq Γ (add_zero k).symm).symm
   funext
-  rw [cast_eq_mcast, mcast]
-  simp only [mul_coe, one_coe_eq_one, mul_one]
+  rw [cast_eq_mcast (add_zero k)]
   ext1
-  rfl
-  simp only [add_zero]
+  simp
 #align modular_form.heq_mul_one ModularForm.hEq_mul_one
 
 theorem hEq_mul_assoc {a b c : ℤ} (f : ModularForm Γ a) (g : ModularForm Γ b)
     (h : ModularForm Γ c) : HEq ((f.mul g).mul h) (f.mul (g.mul h)) :=
   by
   apply heq_of_cast_eq (type_eq Γ (add_assoc a b c))
-  rw [cast_eq_mcast (add_assoc a b c), mcast]
+  rw [cast_eq_mcast (add_assoc a b c)]
   ext1
-  simp only [mul_coe, Pi.mul_apply, ← mul_assoc]
-  rfl
+  simp [mul_assoc]
 #align modular_form.heq_mul_assoc ModularForm.hEq_mul_assoc
 
 theorem hEq_mul_comm (a b : ℤ) (f : ModularForm Γ a) (g : ModularForm Γ b) :
     HEq (f.mul g) (g.mul f) :=
   by
   apply heq_of_cast_eq (type_eq Γ (add_comm a b))
-  rw [cast_eq_mcast (add_comm a b), mcast]
+  rw [cast_eq_mcast (add_comm a b)]
   ext1
-  simp only [mul_coe, Pi.mul_apply, mul_comm]
-  rfl
+  simp [mul_comm]
 #align modular_form.heq_mul_comm ModularForm.hEq_mul_comm
 
 section
