@@ -8,6 +8,33 @@ import Mathlib.NumberTheory.Modular
 import Mathlib.Analysis.Complex.UpperHalfPlane.FunctionsBoundedAtInfty
 import Mathlib.NumberTheory.ModularForms.Basic
 
+section SLModularAction
+
+open Matrix Matrix.SpecialLinearGroup
+
+open scoped Classical BigOperators MatrixGroups UpperHalfPlane
+
+attribute [local instance] Fintype.card_fin_even
+attribute [-instance] Matrix.SpecialLinearGroup.instCoeFun
+attribute [-instance] Matrix.GeneralLinearGroup.instCoeFun
+variable (g : SL(2, ℤ)) (z : ℍ) (Γ : Subgroup SL(2, ℤ))
+-- Matrix.GLPos (Fin 2) ℝ R
+theorem sl_moeb (A : SL(2, ℤ)) (z : ℍ) :
+    A • z = @SMul.smul _ _ MulAction.toSMul (A : Matrix.GLPos (Fin 2) ℝ) z :=
+  rfl
+
+local notation "GL(" n ", " R ")" "⁺" => Matrix.GLPos (Fin n) R
+
+theorem sl_moeb' (A : SL(2, ℤ)) (z : ℍ) :
+    letI := @MulAction.toSMul { x // x ∈ GL(2, ℝ)⁺ } ℍ
+  -- (Submonoid.toMonoid GL(2, ℝ)⁺.toSubmonoid)
+
+    A • z = (A : Matrix.GLPos (Fin 2) ℝ) • z :=
+  rfl
+
+end SLModularAction
+
+
 open scoped ComplexConjugate UpperHalfPlane
 
 local notation "GL(" n ", " R ")" "⁺" => Matrix.GLPos (Fin n) R
@@ -16,6 +43,8 @@ local notation "SL(" n ", " R ")" => Matrix.SpecialLinearGroup (Fin n) R
 
 local notation:1024 "↑ₘ" A:1024 =>
   (((A : GL(2, ℝ)⁺) : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) _)
+local notation:1024 "↑ₘ[" R "]" A:1024 =>
+  ((A : GL (Fin 2) R) : Matrix (Fin 2) (Fin 2) R)
 
 open ModularForm
 
@@ -204,6 +233,7 @@ def pet (f g : ℍ → ℂ) (k : ℤ) : ℍ → ℂ := fun z =>
 def petSelf (f : ℍ → ℂ) (k : ℤ) : ℍ → ℝ := fun z => Complex.abs (f z) ^ 2 * UpperHalfPlane.im z ^ k
 #align pet_self petSelf
 
+#check UpperHalfPlane.SLAction
 set_option trace.profiler true in
 set_option trace.Meta.isDefEq true in
 theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvariantForm Γ k)
@@ -223,6 +253,7 @@ theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvarian
   rw [mod_f, mod_g]--; ring_nf
   suffices ↑(γ • z).im = ↑(UpperHalfPlane.im z) / D / conj D
     by
+    stop
     rw [this]; simp (config := { zeta := false }) only [UpperHalfPlane.coe_im, div_zpow]
     trans (z.im : ℂ) ^ k / D ^ k / conj D ^ k * D ^ k * conj D ^ k * g z * conj (f z)
     · ring
@@ -244,18 +275,23 @@ theorem pet_is_invariant {k : ℤ} {Γ : Subgroup SL(2, ℤ)} (f : SlashInvarian
   have : ((γ • z : ℍ) : ℂ).im = UpperHalfPlane.im z / Complex.normSq D :=
     by
     rw [UpperHalfPlane.coe_im]
-    erw [UpperHalfPlane.im_smul_eq_div_normSq γ z]
-    congr
+    rw [sl_moeb']
+    simp only [SMul.smul]
+    rw [UpperHalfPlane.im_smul_eq_div_normSq γ z]
+    refine congr_arg (fun x => x / Complex.normSq D) ?_
+    convert one_mul (UpperHalfPlane.im z)
+    stop
+    -- congr
     -- convert UpperHalfPlane.im_smul_eq_div_normSq γ z
     -- stop
     simp only [UpperHalfPlane.coe_im,
       Matrix.SpecialLinearGroup.coe_GLPos_coe_GL_coe_matrix,
       Matrix.SpecialLinearGroup.coe_matrix_coe, Int.coe_castRingHom]
     -- suffices ((↑ₘγ).map ((↑) : ℤ → ℝ)).det = (1 : ℝ) by sorry; rw [this]; sorry; simp only [one_mul]
-    convert one_mul (UpperHalfPlane.im z)
-    have : (↑ₘ γ : Matrix (Fin 2) (Fin 2) ℤ).map ((↑) : ℤ → ℝ) = ↑ₘ(γ : SL(2, ℝ)) := by
-      simp only [Matrix.SpecialLinearGroup.coe_matrix_coe, Int.coe_castRingHom]
-    rw [this]; apply Matrix.SpecialLinearGroup.det_coe
+    trans Matrix.det ↑ₘγ
+    -- have : (↑ₘ γ : Matrix (Fin 2) (Fin 2) ℤ).map ((↑) : ℤ → ℝ) = ↑ₘ(γ : SL(2, ℝ)) := by
+    · rw [Matrix.SpecialLinearGroup.coe_matrix_coe, Int.coe_castRingHom]
+    · apply Matrix.SpecialLinearGroup.det_coe
   apply_fun ((↑) : ℝ → ℂ) at this
   convert this
   simp only [UpperHalfPlane.coe_im, Complex.ofReal_div]
